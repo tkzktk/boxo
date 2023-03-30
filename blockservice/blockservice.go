@@ -157,8 +157,8 @@ func (s *blockService) AddBlock(ctx context.Context, o blocks.Block) error {
 	logger.Debugf("BlockService.BlockAdded %s", c)
 
 	if s.exchange != nil {
-		if err := s.exchange.NotifyNewBlocks(ctx, o); err != nil {
-			logger.Errorf("NotifyNewBlocks: %s", err.Error())
+		if err := s.exchange.NotifyNewBlock(ctx, o); err != nil {
+			logger.Errorf("NotifyNewBlock: %s", err.Error())
 		}
 	}
 
@@ -254,7 +254,7 @@ func getBlock(ctx context.Context, c cid.Cid, bs blockstore.Blockstore, fget fun
 		if err != nil {
 			return nil, err
 		}
-		err = f.NotifyNewBlocks(ctx, blk)
+		err = f.NotifyNewBlock(ctx, blk)
 		if err != nil {
 			return nil, err
 		}
@@ -334,7 +334,6 @@ func getBlocks(ctx context.Context, ks []cid.Cid, bs blockstore.Blockstore, fget
 			return
 		}
 
-		var cache [1]blocks.Block // preallocate once for all iterations
 		for {
 			var b blocks.Block
 			select {
@@ -355,13 +354,11 @@ func getBlocks(ctx context.Context, ks []cid.Cid, bs blockstore.Blockstore, fget
 			}
 
 			// inform the exchange that the blocks are available
-			cache[0] = b
-			err = f.NotifyNewBlocks(ctx, cache[:]...)
+			err = f.NotifyNewBlock(ctx, b)
 			if err != nil {
 				logger.Errorf("could not tell the exchange about new blocks: %s", err)
 				return
 			}
-			cache[0] = nil // early gc
 
 			select {
 			case out <- b:
@@ -391,6 +388,7 @@ func (s *blockService) Close() error {
 }
 
 type notifier interface {
+	NotifyNewBlock(context.Context, blocks.Block) error
 	NotifyNewBlocks(context.Context, ...blocks.Block) error
 }
 
