@@ -173,7 +173,7 @@ const (
 )
 
 // DuplicateBlocksPolicy represents the content type parameter 'dups' (IPIP-412)
-type DuplicateBlocksPolicy int
+type DuplicateBlocksPolicy uint8
 
 const (
 	DuplicateBlocksUnspecified DuplicateBlocksPolicy = iota // 0 - implicit default
@@ -182,14 +182,16 @@ const (
 )
 
 // NewDuplicateBlocksPolicy returns DuplicateBlocksPolicy based on the content type parameter 'dups' (IPIP-412)
-func NewDuplicateBlocksPolicy(dupsValue string) DuplicateBlocksPolicy {
+func NewDuplicateBlocksPolicy(dupsValue string) (DuplicateBlocksPolicy, error) {
 	switch dupsValue {
 	case "y":
-		return DuplicateBlocksIncluded
+		return DuplicateBlocksIncluded, nil
 	case "n":
-		return DuplicateBlocksExcluded
+		return DuplicateBlocksExcluded, nil
+	case "":
+		return DuplicateBlocksUnspecified, nil
 	}
-	return DuplicateBlocksUnspecified
+	return 0, fmt.Errorf("unsupported application/vnd.ipld.car content type dups parameter: %q", dupsValue)
 }
 
 func (d DuplicateBlocksPolicy) Bool() bool {
